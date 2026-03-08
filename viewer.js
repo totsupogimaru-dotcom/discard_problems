@@ -13,7 +13,7 @@
     // ============================
     const CONFIG = {
         imageDir: 'cards',          // 画像フォルダ
-        totalQuestions: 10,          // 問題数（実際の画像数に合わせて変更）
+        totalQuestions: 20,          // 問題数（実際の画像数に合わせて変更）
         imageExtension: 'jpg',     // 画像拡張子（実際のPNG画像に差し替える場合は 'png' に変更）
         swipeThreshold: 50,        // スワイプ判定の最小距離(px)
         animationDuration: 200,    // アニメーション時間(ms)
