@@ -13,8 +13,8 @@
     // ============================
     const CONFIG = {
         imageDir: 'cards',          // 画像フォルダ
-        totalQuestions: 20,          // 問題数（実際の画像数に合わせて変更）
-        imageExtension: 'jpg',     // 画像拡張子（実際のPNG画像に差し替える場合は 'png' に変更）
+        totalQuestions: 30,          // 問題数（実際の画像数に合わせて変更）
+        imageExtensions: ['jpg', 'png'], // 対応する拡張子のリスト
         swipeThreshold: 50,        // スワイプ判定の最小距離(px)
         animationDuration: 200,    // アニメーション時間(ms)
     };
@@ -31,13 +31,16 @@
     const imageList = [];
     for (let i = 1; i <= CONFIG.totalQuestions; i++) {
         const num = String(i).padStart(3, '0');
+
+        // 問題用のデータ（拡張子は後で解決）
         imageList.push({
-            path: CONFIG.imageDir + '/q_' + num + '.' + CONFIG.imageExtension,
+            basePath: CONFIG.imageDir + '/q_' + num,
             type: 'question',
             questionNum: i
         });
+        // 回答用のデータ（拡張子は後で解決）
         imageList.push({
-            path: CONFIG.imageDir + '/a_' + num + '.' + CONFIG.imageExtension,
+            basePath: CONFIG.imageDir + '/a_' + num,
             type: 'answer',
             questionNum: i
         });
@@ -68,20 +71,46 @@
         img.classList.remove('fade-in', 'fade-out', 'fade-out-reverse');
         img.classList.add(fadeOutClass);
 
+        // 拡張子を順番に試す関数
+        function tryLoad(extIndex) {
+            if (extIndex >= CONFIG.imageExtensions.length) {
+                // すべての拡張子を試しても見つからない場合
+                img.classList.remove('fade-out', 'fade-out-reverse');
+                img.classList.add('fade-in');
+                return;
+            }
+
+            const path = item.basePath + '.' + CONFIG.imageExtensions[extIndex];
+            const tempImg = new Image();
+
+            tempImg.onload = function () {
+                img.src = path;
+                img.classList.remove('fade-out', 'fade-out-reverse');
+                img.classList.add('fade-in');
+                // 成功したパスをキャッシュ（オプションで追加可能）
+                item.path = path;
+            };
+
+            tempImg.onerror = function () {
+                // 次の拡張子を試す
+                tryLoad(extIndex + 1);
+            };
+
+            tempImg.src = path;
+        }
+
         setTimeout(function () {
-            img.src = item.path;
-
-            img.onload = function () {
-                img.classList.remove('fade-out', 'fade-out-reverse');
-                img.classList.add('fade-in');
-            };
-
-            img.onerror = function () {
-                // 画像が見つからない場合のフォールバック
-                img.classList.remove('fade-out', 'fade-out-reverse');
-                img.classList.add('fade-in');
-            };
-
+            if (item.path) {
+                // 既にパスが解決済みの場合はそれを使う
+                img.src = item.path;
+                img.onload = function () {
+                    img.classList.remove('fade-out', 'fade-out-reverse');
+                    img.classList.add('fade-in');
+                };
+            } else {
+                // 未解決の場合は拡張子を順に試行
+                tryLoad(0);
+            }
             // インジケーター更新
             updateIndicator(item);
         }, CONFIG.animationDuration);
@@ -93,9 +122,29 @@
         currentIndex = index;
         var item = imageList[currentIndex];
 
-        img.src = item.path;
-        img.classList.remove('fade-out', 'fade-out-reverse');
-        img.classList.add('fade-in');
+        if (item.path) {
+            img.src = item.path;
+            img.classList.remove('fade-out', 'fade-out-reverse');
+            img.classList.add('fade-in');
+        } else {
+            // 初回表示時も拡張子試行を行う
+            function tryLoadDirect(extIndex) {
+                if (extIndex >= CONFIG.imageExtensions.length) return;
+                const path = item.basePath + '.' + CONFIG.imageExtensions[extIndex];
+                const tempImg = new Image();
+                tempImg.onload = function () {
+                    img.src = path;
+                    img.classList.remove('fade-out', 'fade-out-reverse');
+                    img.classList.add('fade-in');
+                    item.path = path;
+                };
+                tempImg.onerror = function () {
+                    tryLoadDirect(extIndex + 1);
+                };
+                tempImg.src = path;
+            }
+            tryLoadDirect(0);
+        }
 
         updateIndicator(item);
     }
