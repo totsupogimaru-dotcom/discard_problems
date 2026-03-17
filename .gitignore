@@ -1,0 +1,11 @@
+# Python virtual environment
+.venv/
+__pycache__/
+
+# Python scripts
+*.py
+
+# Problem image original folders
+Q1_Q30/
+Q31_Q60/
+Q61_Q90/
