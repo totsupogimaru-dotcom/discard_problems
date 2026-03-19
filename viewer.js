@@ -178,15 +178,26 @@
 
         var touchEndX = e.changedTouches[0].screenX;
         var touchEndY = e.changedTouches[0].screenY;
+        var clientX = e.changedTouches[0].clientX; // 画面相対のX座標
 
         var diffX = touchStartX - touchEndX;
         var diffY = touchStartY - touchEndY;
 
+        // スワイプ距離が閾値未満ならタップと判定
+        if (Math.abs(diffX) < CONFIG.swipeThreshold && Math.abs(diffY) < CONFIG.swipeThreshold) {
+            var screenWidth = window.innerWidth;
+            if (clientX > screenWidth / 2) {
+                // 右半分をタップ → 次へ
+                goNext();
+            } else {
+                // 左半分をタップ → 前へ
+                goPrev();
+            }
+            return;
+        }
+
         // 縦スワイプが大きい場合は無視
         if (Math.abs(diffY) > Math.abs(diffX)) return;
-
-        // スワイプ距離が閾値未満なら無視
-        if (Math.abs(diffX) < CONFIG.swipeThreshold) return;
 
         if (diffX > 0) {
             // 左スワイプ → 次へ
@@ -209,6 +220,17 @@
         }
     }
 
+    function goSkip(step) {
+        var newIndex = currentIndex + step;
+        if (newIndex < 0) newIndex = 0;
+        if (newIndex >= totalPages) newIndex = totalPages - 1;
+        
+        if (newIndex !== currentIndex) {
+            var direction = step > 0 ? 'next' : 'prev';
+            showImage(newIndex, direction);
+        }
+    }
+
     // ============================
     // キーボード操作（PC用）
     // ============================
@@ -226,6 +248,29 @@
     // 初期化
     // ============================
     function init() {
+        // 10枚スキップボタンのイベント設定
+        var skipPrevBtn = document.getElementById('skip-prev-btn');
+        var skipNextBtn = document.getElementById('skip-next-btn');
+
+        if (skipPrevBtn) {
+            // スワイプ等の処理に伝播しないように止める
+            skipPrevBtn.addEventListener('touchstart', function(e) { e.stopPropagation(); }, { passive: true });
+            skipPrevBtn.addEventListener('touchend', function(e) { e.stopPropagation(); }, { passive: true });
+            skipPrevBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                goSkip(-10);
+            });
+        }
+
+        if (skipNextBtn) {
+            skipNextBtn.addEventListener('touchstart', function(e) { e.stopPropagation(); }, { passive: true });
+            skipNextBtn.addEventListener('touchend', function(e) { e.stopPropagation(); }, { passive: true });
+            skipNextBtn.addEventListener('click', function(e) {
+                e.stopPropagation();
+                goSkip(10);
+            });
+        }
+
         // タッチイベント
         viewer.addEventListener('touchstart', onTouchStart, { passive: true });
         viewer.addEventListener('touchend', onTouchEnd, { passive: true });
